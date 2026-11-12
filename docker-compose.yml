@@ -98,6 +98,21 @@ services:
       timeout: 5s
       retries: 5
 
+  
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: lendtracker-phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+
+
 volumes:
   mysql_data:
   frontend_node_modules:
