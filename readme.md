@@ -1,8 +1,8 @@
-# LendTracker
+# LendTrack – Personal Money Lending & Interest Management System
 
-A Docker-based web application project using React, Vite, Node.js, Express, and MySQL.
+A Docker-based web application for managing personal lending, customers, loans, interest, repayments and payment records.
 
-This README explains how to install, configure, run, stop, restart, and manage the complete LendTracker project.
+This README explains how to configure, install, run, stop, restart and manage LendTrack on your local system or another developer's computer.
 
 ---
 
@@ -15,164 +15,422 @@ This README explains how to install, configure, run, stop, restart, and manage t
 | Node.js | Backend runtime |
 | Express.js | Backend API |
 | MySQL 8.0 | Database |
+| Knex.js | Database migrations |
 | Docker | Containerization |
-| Docker Compose | Managing multiple containers |
+| Docker Compose | Managing services |
 | phpMyAdmin | MySQL GUI |
+| Git & GitHub | Version control and collaboration |
 
 ---
 
-## 2. Project Structure
+## 2. Current Project Features
+
+The following features have been implemented or started:
+
+- Admin authentication and login.
+- Admin session management using HTTP-only cookies.
+- Protected dashboard route.
+- Dashboard UI with sidebar and summary cards.
+- MySQL database connection.
+- Database migrations using Knex.js.
+- Initial admin authentication tables.
+- Customer database table migration.
+- Docker-based development environment.
+- Shared project source code through GitHub.
+
+**Upcoming development:**
+
+- Complete customer management (CRUD).
+- Loan creation and management.
+- Simple, compound and custom interest calculations.
+- Repayment management.
+- Payment history and transaction ledger.
+- Overdue tracking and reminders.
+- Reports and analytics.
+- Notification integration.
+
+---
+
+## 3. Project Structure
 
 ```text
 lend-tracker-main/
 │
 ├── frontend/
 │   ├── src/
-│   ├── public/
+│   │   ├── component/
+│   │   │   └── auth/
+│   │   │       ├── login.jsx
+│   │   │       └── ProtectedRoute.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   └── Dashboard.jsx
+│   │   │
+│   │   ├── services/
+│   │   │   └── auth.service.js
+│   │   │
+│   │   └── App.jsx
+│   │
 │   ├── package.json
 │   ├── vite.config.js
 │   └── Dockerfile
 │
 ├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.js
+│   │   │
+│   │   ├── database/
+│   │   │   ├── migrations/
+│   │   │   └── seeds/
+│   │   │
+│   │   ├── routes/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   └── app.js
+│   │
 │   ├── index.js
+│   ├── knexfile.js
 │   ├── package.json
+│   ├── .env
 │   └── Dockerfile
 │
 ├── docker-compose.yml
-└── README.md
+├── README.md
+└── .gitignore
 ```
+
+*The structure may expand as the MVC architecture and additional modules are developed.*
 
 ---
 
-## 3. Prerequisites
+## 4. Prerequisites
 
-Install the following software:
+Install:
 
 1. Docker Desktop
 2. Visual Studio Code
-3. Git (optional)
+3. Git (for GitHub collaboration)
 
-Make sure Docker Desktop is running before executing Docker commands.
+Make sure Docker Desktop is running.
 
-Verify installation:
+Verify Docker installation:
 
 ```cmd
 docker --version
-```
-
-```cmd
 docker compose version
+git --version
 ```
 
 ---
 
-## 4. Docker Services
+## 5. Docker Services and URLs
 
-The project runs four services:
+The application runs four services.
 
-| Service | Port | Purpose |
+| Service | Port | URL |
 |---|---:|---|
-| Frontend | 5173 | React application |
-| Backend | 5000 | Express API |
-| MySQL | 3307 | Database |
-| phpMyAdmin | 8080 | Database GUI |
+| Frontend | 5173 | http://localhost:5173 |
+| Backend | 5000 | http://localhost:5000 |
+| MySQL | 3307 | localhost:3307 |
+| phpMyAdmin | 8080 | http://localhost:8080 |
 
-### Access URLs
+### Important MySQL Port Configuration
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
-- phpMyAdmin: http://localhost:8080
+There are two different connection configurations:
+
+**From the Windows host machine:**
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3307
+```
+
+**From the backend Docker container:**
+
+```env
+DB_HOST=db
+DB_PORT=3306
+```
+
+This is because Docker Compose maps host port `3307` to MySQL's internal port `3306`.
+
+Do not use `127.0.0.1:3307` inside the backend container.
 
 ---
 
-## 5. Database Configuration
+## 6. Environment Configuration
 
-MySQL configuration:
+The backend requires environment variables.
 
-| Setting | Value |
-|---|---|
-| Database | lendtracker |
-| Username | root |
-| Password | root123 |
-| Host from Docker containers | db |
-| Internal MySQL port | 3306 |
-| Host machine port | 3307 |
-
-### phpMyAdmin Login
-
-Open:
-
-http://localhost:8080
-
-Login credentials:
+Create this file:
 
 ```text
-Username: root
-Password: root123
-Server: db
+backend/.env
 ```
 
-Select the `lendtracker` database to manage tables and records.
+Example configuration for Docker-based development:
+
+```env
+DB_HOST=db
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=YOUR_DATABASE_PASSWORD
+DB_NAME=lendtracker
+
+DB_CONNECTION_LIMIT=10
+
+ADMIN_SETUP_SECRET=YOUR_RANDOM_SETUP_SECRET
+```
+
+Replace the example values with your own development credentials.
+
+### Important
+
+- Never upload `.env` to GitHub.
+- Never share database passwords or setup secrets publicly.
+- Keep `.env` in `.gitignore`.
+- Each developer should create their own `.env`.
+- The setup secret must match the `x-admin-setup-secret` header used in the admin setup request.
+
+The Docker Compose backend environment must also use:
+
+```yaml
+environment:
+  DB_HOST: db
+  DB_PORT: 3306
+  DB_USER: root
+  DB_PASSWORD: YOUR_DATABASE_PASSWORD
+  DB_NAME: lendtracker
+```
+
+Make sure the MySQL service uses the matching database password.
 
 ---
 
-## 6. First-Time Project Setup
+## 7. First-Time Setup – New Developer
 
-### Step 1: Open project folder
-
-Open CMD or PowerShell and navigate to the project directory.
+### Step 1: Clone the GitHub repository
 
 ```cmd
-cd C:\Users\R.pc\Desktop\lend-tracker-main
+git clone https://github.com/tarunmac29/lend-tracker-main.git
 ```
 
-### Step 2: Check Docker Compose configuration
+Open the project folder:
+
+```cmd
+cd lend-tracker-main
+```
+
+If you are using a specific development branch, switch to it:
+
+```cmd
+git checkout dashboard
+```
+
+### Step 2: Create backend environment file
+
+Create:
+
+```text
+backend/.env
+```
+
+Add the environment configuration from Section 6.
+
+### Step 3: Validate Docker Compose
 
 ```cmd
 docker compose config
 ```
 
-This command validates the Docker Compose YAML configuration.
+If there are no configuration errors, continue.
 
-### Step 3: Build Docker images
+### Step 4: Build Docker images
 
 ```cmd
 docker compose build
 ```
 
-This builds the frontend and backend Docker images.
-
-### Step 4: Install frontend dependencies
+### Step 5: Install frontend dependencies
 
 ```cmd
 docker compose run --rm --no-deps frontend npm install
 ```
 
-### Step 5: Install backend dependencies
+### Step 6: Install backend dependencies
 
 ```cmd
 docker compose run --rm --no-deps backend npm install
 ```
 
-These commands install dependencies into their respective persistent Docker volumes.
-
-### Step 6: Start all services
+### Step 7: Start all services
 
 ```cmd
 docker compose up -d
 ```
 
-### Step 7: Verify containers
+### Step 8: Check service status
 
 ```cmd
 docker compose ps
 ```
 
-All four services should be running. MySQL should show `healthy`.
+Expected services:
+
+- lendtracker-frontend
+- lendtracker-backend
+- lendtracker-mysql
+- lendtracker-phpmyadmin
+
+MySQL should show `healthy`.
 
 ---
 
-## 7. Daily Commands
+## 8. Database Setup and Migrations
+
+LendTrack uses MySQL and Knex.js migrations to create database tables.
+
+Each developer has their own local database. GitHub shares migration files, not database records.
+
+### Step 1: Confirm migration files exist
+
+From the project root:
+
+```cmd
+dir backend\src\database\migrations
+```
+
+### Step 2: Start Docker services
+
+```cmd
+docker compose up -d
+```
+
+### Step 3: Run migrations
+
+Run this from the project root:
+
+```cmd
+docker compose exec backend npx knex migrate:latest
+```
+
+This executes all pending migrations using the backend container's database configuration.
+
+### Step 4: Check migration status
+
+```cmd
+docker compose exec backend npx knex migrate:status
+```
+
+### Step 5: Verify database tables
+
+Open phpMyAdmin:
+
+http://localhost:8080
+
+Login using your MySQL credentials and select:
+
+```text
+Database: lendtracker
+```
+
+You should see the tables created by the migrations, such as:
+
+- admins
+- admin_sessions
+- customers
+- knex_migrations
+- knex_migrations_lock
+
+The exact tables depend on which migration files are present and have been executed.
+
+### Important Migration Rules
+
+- Every new database table should have a migration file.
+- Commit and push migration files to GitHub.
+- Other developers must pull the latest code and run `migrate:latest`.
+- Do not manually create the same tables if migrations already manage them.
+- Never delete migration history to fix an ordinary database issue.
+
+### Create a New Migration
+
+From the project root:
+
+```cmd
+docker compose exec backend npx knex migrate:make create_loans_table
+```
+
+This creates a new migration file in the configured migrations directory.
+
+After writing the migration:
+
+```cmd
+docker compose exec backend npx knex migrate:latest
+```
+
+---
+
+## 9. Admin Authentication Setup
+
+After the database migrations have been executed, create the initial admin account.
+
+### Admin Setup API
+
+```http
+POST http://localhost:5000/api/auth/setup
+```
+
+Headers:
+
+| Key | Value |
+|---|---|
+| Content-Type | application/json |
+| x-admin-setup-secret | Your ADMIN_SETUP_SECRET |
+
+Example request body:
+
+```json
+{
+  "email": "your-admin@example.com",
+  "password": "YourUniqueStrongPassword123!"
+}
+```
+
+Use your own email and a strong unique password. The current backend validation requires at least 10 characters.
+
+The setup secret must match the value configured in `backend/.env`.
+
+Do not share the setup secret or admin password.
+
+### Login
+
+Open the frontend:
+
+http://localhost:5173
+
+Enter the admin credentials created during setup.
+
+After successful login, the application redirects to the protected dashboard.
+
+### Authentication Checks
+
+Test the following:
+
+1. Valid admin login.
+2. Invalid password rejection.
+3. Dashboard access after login.
+4. Direct dashboard URL access without login.
+5. Session persistence after page refresh.
+6. Logout and session invalidation.
+
+The admin session is stored using an HTTP-only cookie.
+
+---
+
+## 10. Daily Development Commands
+
+Run these commands from the project root.
 
 ### Start all services
 
@@ -192,19 +450,19 @@ docker compose stop
 docker compose restart
 ```
 
-### Restart only frontend
+### Restart frontend
 
 ```cmd
 docker compose restart frontend
 ```
 
-### Restart only backend
+### Restart backend
 
 ```cmd
 docker compose restart backend
 ```
 
-### Restart only MySQL
+### Restart MySQL
 
 ```cmd
 docker compose restart db
@@ -216,9 +474,9 @@ docker compose restart db
 docker compose down
 ```
 
-Important: `docker compose down` does not delete the named MySQL data volume.
+This removes containers and the Compose network but preserves named volumes.
 
-### Start again after stopping
+### Start again
 
 ```cmd
 docker compose up -d
@@ -226,63 +484,59 @@ docker compose up -d
 
 ---
 
-## 8. View Logs
+## 11. View Logs
 
 ### All services
-
-```cmd
-docker compose logs
-```
-
-### Live logs
 
 ```cmd
 docker compose logs -f
 ```
 
-### Frontend logs
+### Frontend
 
 ```cmd
 docker compose logs -f frontend
 ```
 
-### Backend logs
+### Backend
 
 ```cmd
 docker compose logs -f backend
 ```
 
-### MySQL logs
+### MySQL
 
 ```cmd
 docker compose logs -f db
 ```
 
-### phpMyAdmin logs
+### phpMyAdmin
 
 ```cmd
 docker compose logs -f phpmyadmin
 ```
 
-### Last 50 log lines
+### Last 50 backend log lines
 
 ```cmd
-docker compose logs --tail=50
+docker logs --tail 50 lendtracker-backend
+```
+
+### Last 100 backend log lines
+
+```cmd
+docker logs --tail 100 lendtracker-backend
 ```
 
 Press `Ctrl + C` to exit live logs.
 
 ---
 
-## 9. Hot Reload – Live Code Changes
+## 12. Hot Reload – Live Code Changes
 
-The project uses Docker volume mounting for development.
-
-This allows developers to edit files in VS Code without rebuilding Docker images for every code change.
+Docker Compose mounts source directories into containers.
 
 ### Frontend
-
-Frontend files are mounted using:
 
 ```yaml
 volumes:
@@ -290,21 +544,9 @@ volumes:
   - frontend_node_modules:/app/node_modules
 ```
 
-Vite polling is enabled in `frontend/vite.config.js`:
-
-```javascript
-server: {
-  host: '0.0.0.0',
-  watch: {
-    usePolling: true,
-    interval: 1000,
-  },
-}
-```
+Vite supports live updates during development.
 
 ### Backend
-
-Backend files are mounted using:
 
 ```yaml
 volumes:
@@ -312,7 +554,7 @@ volumes:
   - backend_node_modules:/app/node_modules
 ```
 
-Backend runs using Nodemon:
+Backend starts with Nodemon:
 
 ```json
 "dev": "nodemon index.js"
@@ -321,55 +563,60 @@ Backend runs using Nodemon:
 ### How to use
 
 1. Open the project in VS Code.
-2. Edit React files inside `frontend/src`.
+2. Edit frontend files inside `frontend/src`.
 3. Save the file.
-4. The browser should automatically update.
-5. Edit backend files inside `backend`.
+4. Check the browser for updates.
+5. Edit backend files.
 6. Save the file.
-7. Nodemon automatically restarts the backend.
+7. Nodemon should restart the backend automatically.
 
-**No Docker rebuild is required for normal source-code changes.**
+Normal source-code changes do not require Docker image rebuilds.
 
 ---
 
-## 10. When Is Docker Rebuild Required?
+## 13. When to Reinstall Dependencies or Rebuild
 
-Rebuild Docker images when:
+### When package.json changes
 
-- Dockerfile changes.
-- Node.js base image changes.
-- Docker build configuration changes.
-- You need to rebuild an image after changing its build-time setup.
-
-For package dependency changes:
+Frontend:
 
 ```cmd
 docker compose run --rm --no-deps frontend npm install
 ```
 
+Backend:
+
 ```cmd
 docker compose run --rm --no-deps backend npm install
 ```
 
-Then restart the services:
+Then restart the relevant service:
 
 ```cmd
-docker compose up -d
+docker compose restart frontend
 ```
 
-If a Dockerfile changes, rebuild the relevant service:
+or:
+
+```cmd
+docker compose restart backend
+```
+
+### When Dockerfile changes
+
+Rebuild frontend:
 
 ```cmd
 docker compose up -d --build frontend
 ```
 
-Or:
+Rebuild backend:
 
 ```cmd
 docker compose up -d --build backend
 ```
 
-For all services:
+Rebuild all:
 
 ```cmd
 docker compose up -d --build
@@ -377,13 +624,15 @@ docker compose up -d --build
 
 ---
 
-## 11. MySQL Database Management
+## 14. MySQL Management
 
-### Connect to MySQL from Docker
+### Open MySQL terminal inside the container
 
 ```cmd
-docker compose exec db mysql -uroot -proot123
+docker compose exec db mysql -uroot -p
 ```
+
+Enter the database password when prompted.
 
 ### Select database
 
@@ -403,106 +652,151 @@ SHOW DATABASES;
 SHOW TABLES;
 ```
 
+### Describe a table
+
+```sql
+DESCRIBE customers;
+```
+
 ### Exit MySQL
 
 ```sql
 EXIT;
 ```
 
-### Access through phpMyAdmin
+### phpMyAdmin
 
 Open:
 
 http://localhost:8080
 
-Use phpMyAdmin to:
+Use the MySQL username and password. The server should be:
 
-- Create databases.
-- Create tables.
-- Insert records.
-- Update records.
-- Delete records.
-- Execute SQL queries.
-- Import and export SQL files.
+```text
+db
+```
 
 ---
 
-## 12. Check Container Status
+## 15. GitHub Collaboration – Working with Friends
+
+GitHub stores the project source code and migration files. It does not automatically synchronize each developer's local MySQL database.
+
+### Before starting work
+
+Pull the latest branch:
+
+```cmd
+git pull origin dashboard
+```
+
+### Check current branch
+
+```cmd
+git branch
+```
+
+### Check changed files
+
+```cmd
+git status
+```
+
+### Add changes
+
+```cmd
+git add .
+```
+
+### Commit changes
+
+```cmd
+git commit -m "feat: add customer management"
+```
+
+### Push changes
+
+```cmd
+git push origin dashboard
+```
+
+### Important Team Rules
+
+- Work on your assigned Git branch.
+- Pull the latest changes before starting work.
+- Do not commit `.env`.
+- Commit migration files.
+- Run pending migrations after pulling database changes.
+- Do not overwrite another developer's changes.
+- Use pull requests to merge completed features.
+
+---
+
+## 16. Docker Volumes and Database Persistence
+
+The project uses named volumes:
+
+| Volume | Purpose |
+|---|---|
+| mysql_data | MySQL database storage |
+| frontend_node_modules | Frontend dependencies |
+| backend_node_modules | Backend dependencies |
+
+List volumes:
+
+```cmd
+docker volume ls
+```
+
+Inspect the MySQL volume:
+
+```cmd
+docker volume inspect lend-tracker-main_mysql_data
+```
+
+### Important Warning
+
+This command deletes the project's named volumes:
+
+```cmd
+docker compose down -v
+```
+
+It can permanently delete the MySQL data stored in `mysql_data`.
+
+**Do not run it unless you intentionally want to reset the database and have a backup.**
+
+For normal stopping, use:
+
+```cmd
+docker compose stop
+```
+
+---
+
+## 17. Troubleshooting
+
+### Problem 1: Frontend is not opening
+
+Check:
 
 ```cmd
 docker compose ps
-```
-
-Show all containers, including stopped containers:
-
-```cmd
-docker compose ps -a
-```
-
-Show Docker containers:
-
-```cmd
-docker ps
-```
-
-Show all containers:
-
-```cmd
-docker ps -a
-```
-
----
-
-## 13. Troubleshooting
-
-### Problem 1: localhost:5173 is not opening
-
-Check frontend logs:
-
-```cmd
 docker compose logs --tail=50 frontend
 ```
 
-Restart frontend:
+Restart:
 
 ```cmd
 docker compose restart frontend
 ```
 
-### Problem 2: vite: not found
+### Problem 2: Backend is not responding
 
-Install frontend dependencies:
-
-```cmd
-docker compose run --rm --no-deps frontend npm install
-```
-
-Then:
+Check:
 
 ```cmd
-docker compose up -d frontend
-```
-
-### Problem 3: nodemon: not found
-
-Install backend dependencies:
-
-```cmd
-docker compose run --rm --no-deps backend npm install
-```
-
-Then:
-
-```cmd
-docker compose up -d backend
-```
-
-### Problem 4: Backend is not responding
-
-Check logs:
-
-```cmd
-docker compose logs --tail=50 backend
+docker compose logs --tail=100 backend
 ```
 
 Restart:
@@ -511,67 +805,90 @@ Restart:
 docker compose restart backend
 ```
 
-### Problem 5: MySQL is not healthy
+### Problem 3: MySQL connection refused
+
+Check that backend Docker environment uses:
+
+```env
+DB_HOST=db
+DB_PORT=3306
+```
+
+Then recreate the backend:
+
+```cmd
+docker compose up -d --force-recreate backend
+```
 
 Check logs:
 
 ```cmd
-docker compose logs db
+docker logs --tail 50 lendtracker-backend
 ```
 
-Check status:
+Expected successful messages:
+
+```text
+MySQL database connected successfully!
+LendTrack server running on port 5000
+```
+
+### Problem 4: Access denied for MySQL user
+
+Check that:
+
+- DB_USER is correct.
+- DB_PASSWORD matches the MySQL configuration.
+- DB_NAME is correct.
+- MySQL container is healthy.
+
+Do not share passwords in logs or screenshots.
+
+### Problem 5: Admin setup returns Internal server error
+
+Check backend logs immediately after sending the request:
 
 ```cmd
-docker compose ps
+docker logs --tail 100 lendtracker-backend
 ```
 
-### Problem 6: Changes are not reflecting in browser
+Verify:
 
-1. Save the file in VS Code.
-2. Confirm the correct project folder is open.
-3. Check Vite polling configuration.
-4. Check frontend logs.
-5. Restart frontend if required:
+- Database migrations have been executed.
+- `ADMIN_SETUP_SECRET` matches the Postman header.
+- Password satisfies the current backend validation.
+- Admin setup has not already been completed if the route only permits initial setup.
+
+### Problem 6: Knex cannot connect to MySQL
+
+For Docker-based migrations, run:
 
 ```cmd
-docker compose restart frontend
+docker compose exec backend npx knex migrate:latest
 ```
+
+Do not use host machine database settings inside the backend container.
+
+### Problem 7: Port 5000 is already in use
+
+Check:
+
+```cmd
+netstat -ano | findstr :5000
+```
+
+If another local Node.js process is running, stop it from its own terminal with `Ctrl + C` before testing the Docker backend.
+
+### Problem 8: Changes are not reflecting
+
+- Save the file.
+- Confirm the correct project directory is open.
+- Check frontend or backend logs.
+- Restart the relevant service if required.
 
 ---
 
-## 14. Docker Volumes
-
-The project uses persistent volumes:
-
-| Volume | Purpose |
-|---|---|
-| mysql_data | MySQL database storage |
-| frontend_node_modules | Frontend dependencies |
-| backend_node_modules | Backend dependencies |
-
-List Docker volumes:
-
-```cmd
-docker volume ls
-```
-
-Inspect a volume:
-
-```cmd
-docker volume inspect lend-tracker-main_mysql_data
-```
-
-**Important:** Do not run the following command unless you intentionally want to delete all project Docker volume data:
-
-```cmd
-docker compose down -v
-```
-
-This can permanently delete the MySQL database stored in `mysql_data`, along with the dependency volumes.
-
----
-
-## 15. Useful Commands Cheat Sheet
+## 18. Useful Commands Cheat Sheet
 
 | Task | Command |
 |---|---|
@@ -581,42 +898,32 @@ This can permanently delete the MySQL database stored in `mysql_data`, along wit
 | Remove containers | `docker compose down` |
 | Build images | `docker compose build` |
 | Rebuild and start | `docker compose up -d --build` |
-| Check status | `docker compose ps` |
-| All logs | `docker compose logs -f` |
+| Check services | `docker compose ps` |
+| View all logs | `docker compose logs -f` |
+| Backend logs | `docker logs --tail 100 lendtracker-backend` |
 | Frontend logs | `docker compose logs -f frontend` |
-| Backend logs | `docker compose logs -f backend` |
 | MySQL logs | `docker compose logs -f db` |
-| Install frontend packages | `docker compose run --rm --no-deps frontend npm install` |
-| Install backend packages | `docker compose run --rm --no-deps backend npm install` |
+| Install frontend dependencies | `docker compose run --rm --no-deps frontend npm install` |
+| Install backend dependencies | `docker compose run --rm --no-deps backend npm install` |
+| Run migrations | `docker compose exec backend npx knex migrate:latest` |
+| Check migration status | `docker compose exec backend npx knex migrate:status` |
+| Open MySQL | `docker compose exec db mysql -uroot -p` |
 
 ---
 
-## 16. Important Development Notes
+## 19. Quick Start – Existing Developer
 
-- Always start Docker Desktop before running the project.
-- Run Docker commands from the project root directory.
-- Use `docker compose up -d` for normal daily startup.
-- Do not rebuild images for normal React or backend source-code changes.
-- Use phpMyAdmin to manage MySQL visually.
-- Do not delete the MySQL volume unless you intentionally want to reset the database.
-- Keep Docker Compose configuration consistent across team members.
-- The current backend root route is a basic Express test endpoint. Database integration and application APIs must be implemented separately.
-
----
-
-## 17. Quick Start for Existing Setup
-
-For normal daily development, only these commands are needed:
+For normal daily development:
 
 ```cmd
-cd C:\Users\R.pc\Desktop\lend-tracker-main
+cd path\to\lend-tracker-main
 
 docker compose up -d
 
 docker compose ps
 ```
 
-Then open:
+Open:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:5000
@@ -630,6 +937,22 @@ docker compose stop
 
 ---
 
-**Happy Coding!**
+## 20. Important Development and Security Notes
 
-LendTracker Development Team
+- Start Docker Desktop before running the project.
+- Run Docker commands from the project root.
+- Use `db:3306` for backend-to-MySQL communication inside Docker.
+- Use `127.0.0.1:3307` only when connecting from the Windows host.
+- Keep `.env` files private.
+- Do not commit real credentials to GitHub.
+- Back up MySQL data regularly.
+- Do not delete Docker volumes casually.
+- Run migrations after pulling new database migration files.
+- Use test data during development instead of real customer financial information.
+- Before production deployment, implement proper authorization, input validation, audit logs, backups, secure secrets management and applicable Indian money-lending and data-protection compliance.
+
+---
+
+## Happy Coding!
+
+**LendTrack Development Team**
