@@ -2,11 +2,13 @@
 import { useState } from "react";
 import "./Login.css";
 import { loginAdmin } from "../../services/auth.service";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
 const [error, setError] = useState("");
@@ -22,10 +24,11 @@ const [success, setSuccess] = useState("");
     try {
         const data = await loginAdmin(email, password);
 
-        setSuccess(`Welcome, ${data.admin.email}!`);
         setPassword("");
 
-        console.log("Login successful:", data.admin);
+console.log("Login successful:", data.admin);
+
+navigate("/dashboard", { replace: true });
     } catch (error) {
         setError(error.message);
     } finally {
