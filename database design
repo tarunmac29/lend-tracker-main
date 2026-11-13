@@ -1,0 +1,71 @@
+
+CREATE DATABASE IF NOT EXISTS lendtrack_db
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE lendtrack_db;
+
+
+-- =====================================
+-- 1. ADMINS TABLE
+-- =====================================
+
+CREATE TABLE admins (
+
+    id TINYINT UNSIGNED NOT NULL DEFAULT 1,
+
+    email VARCHAR(255) NOT NULL,
+
+    password_hash VARCHAR(255) NOT NULL,
+
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    failed_login_attempts TINYINT UNSIGNED
+        NOT NULL DEFAULT 0,
+
+    locked_until DATETIME NULL,
+
+    last_login_at DATETIME NULL,
+
+    password_changed_at DATETIME NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY unique_admin_email (email),
+
+    CONSTRAINT only_one_admin CHECK (id = 1)
+
+) ENGINE=InnoDB;
+
+
+-- =====================================
+-- 2. ADMIN SESSIONS TABLE
+-- =====================================
+
+CREATE TABLE admin_sessions (
+
+    session_id VARCHAR(128) NOT NULL,
+
+    admin_id TINYINT UNSIGNED NOT NULL,
+
+    expires_at DATETIME NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (session_id),
+
+    INDEX idx_admin_sessions_admin_id (admin_id),
+
+    INDEX idx_admin_sessions_expiry (expires_at),
+
+    CONSTRAINT fk_admin_sessions_admin
+        FOREIGN KEY (admin_id)
+        REFERENCES admins(id)
+        ON DELETE CASCADE
+
+) ENGINE=InnoDB;

@@ -1,19 +1,25 @@
 
-const express = require("express");
-const cors = require("cors");
+require("dotenv").config();
 
-const app = express();
+const app = require("./src/app");
+const { testDatabaseConnection } = require("./src/config/database");
 
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 5000;
 
-// Test API
-app.get("/home", (req, res) => {
-  res.send("LendTracker Backend is Running!");
-});
+async function startServer() {
+    try {
+        // Check MySQL connection first
+        await testDatabaseConnection();
 
-const PORT = 5000;
+        // Start Express server
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`LendTrack server running on port ${PORT}`);
+        });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    } catch (error) {
+        console.error("Failed to start server:", error.message);
+        process.exit(1);
+    }
+}
+
+startServer();
